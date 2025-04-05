@@ -1,12 +1,12 @@
 CREATE table promocodes (
 	promo_id integer PRIMARY KEY AUTOINCREMENT,
 	code text NOT NULL UNIQUE,
-	discount_percent integer check(discount_percent between 0 and 100),
+	discount_percent integer check(discount_percent between 1 and 100),
 	valid_from DATE,
 	valid_to DATE,
-	max_uses integer DEFAULT 0,
+	max_uses integer check(max_uses > 0 or max_uses IS NULL),
 	used_count integer DEFAULT 0,
-	is_active integer DEFAULT 0 check(is_active in (0, 1)),
+	is_active integer DEFAULT 1 check(is_active in (0, 1)),
 	created_by integer NOT NULL,
 	
 	FOREIGN KEY (created_by) REFERENCES users(id)
