@@ -73,3 +73,67 @@ select
 	(array_agg(arrival_airport order by arrival_airport)) as array_arrival_airport
 from bookings.flights
 group by departure_airport;
+
+
+-- Доп.задание
+-- HAVING - фильтрует агрегированные данные (после GROUP BY)
+select * from bookings.seats;
+
+select
+	aircraft_code,
+	count(*) filter (where fare_conditions = 'Business') as business_stats
+from bookings.seats
+group by aircraft_code
+having count(*) filter (where fare_conditions = 'Business') > 25;
+
+-- EPOCH - вычисляет разницу между двумя временными метками в СЕКУНДАХ
+select * from bookings.flights;
+
+select
+	flight_id,
+	scheduled_arrival,
+	scheduled_departure,
+	AGE(scheduled_arrival,scheduled_departure) as flight_duration,
+	EXTRACT(EPOCH from scheduled_arrival - scheduled_departure) as flight_duration_seconds
+from bookings.flights;
+
+-- PERCENTILE_CONT - можно использовать для подсчета медианы
+select * from bookings.ticket_flights;
+
+select
+	flight_id,
+	PERCENTILE_CONT(0.5) WITHIN GROUP (order by amount) as median_ticket_amount,
+from bookings.ticket_flights
+group by flight_id;
+
+-- DATE_TRUNC() - округляет дату до начала месяца/года/дня
+-- ROW_NUMBER() — нумерует строки внутри группы в определённом порядке
+-- 			можно использовать для получения топ значений в группе
+select * from bookings.bookings;
+
+select *
+from (
+	select
+		DATE_TRUNC('month', book_date) as month_start,
+		sum(total_amount) as bookings_total_count,
+		ROW_NUMBER() OVER (ORDER BY sum(total_amount) DESC) AS rank
+	from bookings.bookings
+	group by month_start
+	order by month_start
+)
+where rank = 1;
+
+-- ROW_NUMBER() + PARTITION BY - можно использовать для получения топ значений в каждой группе
+select * from bookings.ticket_flights;
+
+select *
+from (
+	select
+		flight_id,
+		fare_conditions,
+		sum(amount) as flight_total_amount, -- по каждому классу
+		ROW_NUMBER() OVER (PARTITION by flight_id ORDER BY sum(amount) DESC) AS rank
+	from bookings.ticket_flights
+	group by flight_id, fare_conditions
+)
+where rank = 1;
