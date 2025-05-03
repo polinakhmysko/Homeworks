@@ -37,6 +37,7 @@ with
 		select
 			round(avg(EXTRACT(EPOCH from actual_departure - scheduled_departure)), 2) as avg_departure_delay
 		from bookings.flights f
+		where actual_departure is not null
 	)
 select
 	f.flight_no,

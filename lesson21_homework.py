@@ -1,13 +1,18 @@
 import psycopg2
 import pandas as pd
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # загружает переменные из .env
+
 def get_connection():
     return psycopg2.connect(
-        host='localhost',
-        port=5432,
-        database='demo',
-        user='postgres',
-        password='postgres'
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD")
     )
 
 # Задача 1. Экспорт расписания рейсов по конкретному маршруту.
@@ -46,9 +51,15 @@ def export_flights_to_csv(file_path, dep_city, arr_city, conn):
         )
         order by f.flight_id;
     """
-    df = pd.read_sql(query, conn, params=(dep_city, arr_city))
-    df.to_csv(file_path, index=False)
-    print(f"Данные успешно экпортированы в {file_path}")
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(query, (dep_city, arr_city))
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]  # имена колонок
+        df = pd.DataFrame(rows, columns=columns)
+        df.to_csv(file_path, index=False)
+        print(f"Данные успешно экспортированы в {file_path}")
+    conn.close()
 
 # Задача 3. Динамическое ценообразование
 # Реализовать функцию, которая автоматически корректирует цены на билеты в зависимости от спроса:
@@ -112,5 +123,5 @@ def update_ticket_amount():
     conn.close()
 
 if __name__ == '__main__':
- #   export_flights_to_csv('PythonProject/project/Homeworks/lesson21_files/Moscow_StPetersburg.csv', 'Москва', 'Санкт-Петербург', get_connection())
+ #   export_flights_to_csv('PythonProject/project/Homeworks/lesson21_files/Moscow_StPetersburg.csv', 'Москва', 'Санкт-Петербург')
     update_ticket_amount()
